@@ -10,7 +10,7 @@ const SECRET_KEY = 'your_secret_key';
 
 mongoose.set('strictQuery', false);
 
-const uri =  "mongodb://root:taLdsfcBVB1ggNRgUPZGooG5@172.21.138.54:27017";
+const uri = "mongodb://mongodb:27017";
 mongoose.connect(uri,{'dbName':'SocialDB'});
 
 const User = mongoose.model('User', { username: String, email: String, password: String });
@@ -80,7 +80,7 @@ app.post('/register', async (req, res) => {
 
         const token = jwt.sign({ userId: newUser._id, username: newUser.username }, SECRET_KEY, { expiresIn: '1h' })
         req.session.token
-        return res.status(201).send({"message":`The user ${username} has been added`})
+        return res.status(201).redirect(`/index?username=${newUser.username}`)
         
     
         } catch (error) {
@@ -90,20 +90,21 @@ app.post('/register', async (req, res) => {
 })
 
 
-app.post('/login', async (res, req) => {
-    const {username, password} = req.body
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body
     try {
         const user = await User.findOne({username, password})
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' })
         }
-        const token = jwt.sign({ userId: newUser._id, username: newUser.username }, SECRET_KEY, { expiresIn: '1h' })
+        const token = jwt.sign({ userId: user._id, username: user.username }, SECRET_KEY, { expiresIn: '1h' })
         req.session.token = token
-        return res.status(200).send({"message":`${user.username} has logged in`})
-    } catch (error) {
+        return res.status(200).redirect(`/index?username=${user.username}`)
+        } catch (error) {
         console.error(error)
-        return res.status(500).json({ message: 'Internal Server Error' })
+        res.status(500).json({ message: 'Internal Server Error' })
     }
+
 })
 
 
@@ -146,7 +147,7 @@ app.put('posts/:postId', authenticateJWT, async (req, res) => {
         if (!post) {
             return res.status(404).json({ message: 'Post not found' })
         }
-        res.status(200).json{_id: postId, userId:req.user.userId }
+        res.status(200).json({_id: postId, userId:req.user.userId })
 
     } catch (error) {
         console.error(error)
