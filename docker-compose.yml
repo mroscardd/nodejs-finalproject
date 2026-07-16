@@ -1,4 +1,3 @@
-version: '3'
 services:
   mongodb:
     image: mongo
@@ -9,9 +8,9 @@ services:
     build: .
     image: socialapp
     ports:
-      - '3000:3000'
+      - '3001:3001'
     depends_on:
       - mongodb
     environment:
-      PORT: 3000
+      PORT: 3001
       SECRET_KEY: 'your_secret_key'

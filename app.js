@@ -11,7 +11,7 @@ const SECRET_KEY = 'your_secret_key';
 mongoose.set('strictQuery', false);
 
 const uri = "mongodb://mongodb:27017";
-mongoose.connect(uri,{'dbName':'SocialDB'});
+mongoose.connect(uri, { 'dbName': 'SocialDB' });
 
 const User = mongoose.model('User', { username: String, email: String, password: String });
 const Post = mongoose.model('Post', { userId: mongoose.Schema.Types.ObjectId, text: String });
@@ -79,13 +79,13 @@ app.post('/register', async (req, res) => {
         await newUser.save()
 
         const token = jwt.sign({ userId: newUser._id, username: newUser.username }, SECRET_KEY, { expiresIn: '1h' })
-        req.session.token
+        req.session.token = token
         return res.status(201).redirect(`/index?username=${newUser.username}`)
         
     
         } catch (error) {
             console.error(error)
-            res.status(500).json({ message: 'Internal Server Error' })
+            return res.status(500).json({ message: 'Internal Server Error' })
         }
 })
 
@@ -102,42 +102,43 @@ app.post('/login', async (req, res) => {
         return res.status(200).redirect(`/index?username=${user.username}`)
         } catch (error) {
         console.error(error)
-        res.status(500).json({ message: 'Internal Server Error' })
+        return res.status(500).json({ message: 'Internal Server Error' })
     }
 
 })
 
 
 app.post('/post', authenticateJWT, async (req, res) => {
-    const text = req.body
+    const { text } = req.body
     if (!text || typeof text !== 'string') {
-        res.status(400).json({ message: 'Please provide valid post content' })
+        return res.status(400).json({ message: 'Please provide valid post content' })
+    }
     try {
         const newPost = new Post({userId: req.user.userId, text})
         await newPost.save()
-        res.status(500).json({ message: 'Internal Server Error' })
+        return res.status(201).json({ message: 'Post created successfully', post: newPost })
     } catch (error) {
         console.error(error)
-        res.status(500).json({ message: 'Internal Server Error' });
+        return res.status(500).json({ message: 'Internal Server Error' });
     }     
-    }
+
 })
 
 app.get('/posts',authenticateJWT, async (req, res) => {
     try {
-    const posts = Post.find({userId: req.user.userId})
-    res.status(200).json(posts)
+    const posts = await Post.find({userId: req.user.userId})
+    return res.status(200).json(posts)
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Internal Server Error' });
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
     })
 
 
-app.put('posts/:postId', authenticateJWT, async (req, res) => {
+app.put('/posts/:postId', authenticateJWT, async (req, res) => {
     const postId = req.params.postId
-    const text = req.body
+    const { text } = req.body
     try {
         const post = await Post.findOneAndUpdate(
             {_id: postId, userId:req.user.userId },
@@ -147,7 +148,7 @@ app.put('posts/:postId', authenticateJWT, async (req, res) => {
         if (!post) {
             return res.status(404).json({ message: 'Post not found' })
         }
-        res.status(200).json({_id: postId, userId:req.user.userId })
+        return res.status(200).json({_id: postId, userId:req.user.userId })
 
     } catch (error) {
         console.error(error)
@@ -155,27 +156,29 @@ app.put('posts/:postId', authenticateJWT, async (req, res) => {
     }
 })
 
-app.delete('posts/:postId', authenticateJWT, async (req, res) => {
+app.delete('/posts/:postId', authenticateJWT, async (req, res) => {
     const postId = req.params.postId
     try {
-        const post = Post.findOneAndDelete({_id: postId, userId:req.user.userId })
+        const post = await Post.findOneAndDelete({_id: postId, userId:req.user.userId })
         if (!post) {
-            res.status(404).json({ message: 'Post not found' })
+           return res.status(404).json({ message: 'Post not found' })
         }
-        res.status(200).json({ message: 'Post deleted successfully', deletedPost: post })
+        return res.status(200).json({ message: 'Post deleted successfully', deletedPost: post })
 
     } catch (error) {
         console.error(error)
-        res.status(500).json({ message: 'Internal Server Error' })
+        return res.status(500).json({ message: 'Internal Server Error' })
     }
 })
 
 app.get('/logout', (req, res) => {
-    res.session.destroy((err) => {
+    req.session.destroy((err) => {
         if (err) {
             console.log(err)
-        res.redirect('/login')
+            return res.redirect('/login')
         }
+        return res.redirect('/login')
+        
     })
 })
 
