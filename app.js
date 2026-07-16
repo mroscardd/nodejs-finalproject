@@ -107,7 +107,32 @@ app.post('/login', async (res, req) => {
 })
 
 
-// Insert your post creation code here.
+app.post('/post', authenticateJWT, async (req, res) => {
+    const text = req.body
+    if (!text || typeof text !== 'string') {
+        res.status(400).json({ message: 'Please provide valid post content' })
+    try {
+        const newPost = new Post({userId: req.user.userId, text})
+        await newPost.save()
+        res.status(500).json({ message: 'Internal Server Error' })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ message: 'Internal Server Error' });
+    }     
+    }
+})
+
+app.get('/posts',authenticateJWT, async (req, res) => {
+    try {
+    const posts = Post.find({userId: req.user.userId})
+    res.status(200).json(posts)
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+    })
+
 
 // Insert your post updation code here.
 
