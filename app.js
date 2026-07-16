@@ -134,10 +134,49 @@ app.get('/posts',authenticateJWT, async (req, res) => {
     })
 
 
-// Insert your post updation code here.
+app.put('posts/:postId', authenticateJWT, async (req, res) => {
+    const postId = req.params.postId
+    const text = req.body
+    try {
+        const post = await Post.findOneAndUpdate(
+            {_id: postId, userId:req.user.userId },
+            { text },
+            {new: true }
+        )
+        if (!post) {
+            return res.status(404).json({ message: 'Post not found' })
+        }
+        res.status(200).json{_id: postId, userId:req.user.userId }
 
-// Insert your post deletion code here.
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({ message: 'Internal Server Error' })
+    }
+})
 
-// Insert your user logout code here.
+app.delete('posts/:postId', authenticateJWT, async (req, res) => {
+    const postId = req.params.postId
+    try {
+        const post = Post.findOneAndDelete({_id: postId, userId:req.user.userId })
+        if (!post) {
+            res.status(404).json({ message: 'Post not found' })
+        }
+        res.status(200).json({ message: 'Post deleted successfully', deletedPost: post })
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ message: 'Internal Server Error' })
+    }
+})
+
+app.get('/logout', (req, res) => {
+    res.session.destroy((err) => {
+        if (err) {
+            console.log(err)
+        res.redirect('/login')
+        }
+    })
+})
+
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
